@@ -1,7 +1,7 @@
 // controllers/productController.js
 const axios = require('axios');
 const handleError = require('../utils/errorHandler');
-const BASE_URL = 'http://your-microservice-url/api/v1/products';
+const BASE_URL = 'http://localhost:8080/api/v1/products';
 
 exports.createProduct = async (req, res) => {
   try {
