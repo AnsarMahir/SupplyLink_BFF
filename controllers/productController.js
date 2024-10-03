@@ -1,6 +1,7 @@
 // controllers/productController.js
 const axios = require('axios');
 const handleError = require('../utils/errorHandler');
+const { sendNotification } = require('../services/notificationService');
 const BASE_URL = 'http://localhost:8080/api/v1/products';
 
 exports.createProduct = async (req, res) => {
@@ -43,6 +44,10 @@ exports.getAllProducts = async (req, res) => {
   try {
     const { page = 0, size = 10 } = req.query;
     const response = await axios.get(`${BASE_URL}?page=${page}&size=${size}`);
+    
+    // Send notification after fetching products
+    //sendNotification('All products have been fetched.');
+
     res.status(200).json(response.data);
   } catch (error) {
     handleError(error, res, 'Error fetching products');
