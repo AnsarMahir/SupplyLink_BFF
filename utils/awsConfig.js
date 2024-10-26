@@ -1,10 +1,13 @@
-const AWS = require('aws-sdk');
+const { CognitoIdentityProviderClient } = require('@aws-sdk/client-cognito-identity-provider');
+const { defaultProvider } = require('@aws-sdk/credential-providers');
+const dotenv = require('dotenv');
 
-AWS.config.update({
-  region: 'eu-north-1',
-  credentials: new AWS.CognitoIdentityCredentials({
-    IdentityPoolId: 'eu-north-1_MAMG3ECOK', 
-  }),
+dotenv.config();
+
+// Initialize Cognito Client with defaultProvider to handle credentials
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION || 'eu-north-1',
+  credentials: defaultProvider,
 });
 
-const cognito = new AWS.CognitoIdentityServiceProvider();
+module.exports = cognitoClient;

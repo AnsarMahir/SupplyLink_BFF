@@ -1,8 +1,21 @@
 const axios = require('axios');
-const AWS = require('aws-sdk');
-AWS.config.update({ region: 'eu-north-1' });
+const {
+    SignUpCommand,
+    InitiateAuthCommand,
+    AdminGetUserCommand,
+    ConfirmSignUpCommand,
+    GlobalSignOutCommand,
+  } = require('@aws-sdk/client-cognito-identity-provider');
+  const cognitoClient = require('../utils/awsConfig')
 
-const cognito = new AWS.CognitoIdentityServiceProvider();
+require('dotenv').config();
+
+const jwtSecretKey = process.env.JWT_SECRET_KEY;
+const CLIENT_ID = process.env.CLIENT_ID;
+const userPoolId = process.env.USER_POOL_ID;
+
+
+
 const USER_MICROSERVICE_BASE_URL = 'http://localhost:8080/api/v1/users';
 
 exports.createUser = async (username, email, password) => {
@@ -25,40 +38,82 @@ exports.getUserProfile = async (token) => {
 
 exports.signUpUser = async (username, email, password) => {
     const params = {
-        ClientId: '3046tcigs53nhra0cckta9h7ot',
-        Username: username,
-        Password: password,
-        UserAttributes: [{ Name: 'email', Value: email }],
+      ClientId: CLIENT_ID,
+      Username: username,
+      Password: password,
+      UserAttributes: [{ Name: 'email', Value: email }],
     };
-    return await cognito.signUp(params).promise();
-};
+    const command = new SignUpCommand(params);
+    return await cognitoClient.send(command);
+  };
+  
+exports.signInUser = async (req) => {
+        const { username, password } = req.body;
+        
+        const params = {
+            AuthFlow: 'USER_PASSWORD_AUTH',
+            ClientId: '3046tcigs53nhra0cckta9h7ot', // replace with your actual ClientId
+            AuthParameters: {
+                USERNAME: username,
+                PASSWORD: password
+            }
+        };
+    
+        try {
+            
+            const data = await cognitoClient.send(new InitiateAuthCommand(params));
+            console.log(data);
+            return {
+                accessToken: data.AuthenticationResult.AccessToken,
+                idToken: data.AuthenticationResult.IdToken,
+                refreshToken: data.AuthenticationResult.RefreshToken,
+                isVerified: true
+            };
+        } catch (error) {
+            if (error.name === 'UserNotConfirmedException') {
+                return { isVerified: false, name:error.name };  // User not confirmed
+            }
+            console.log("Serive error" + error);
+            return { isVerified: false, name:error.name };  // Rethrow other errors
+        }
+    }
 
-exports.signInUser = async (email, password) => {
+
+
+  exports.verifyUser = async (req) => {
+    const {username, code} = req.body;
     const params = {
-        AuthFlow: 'USER_PASSWORD_AUTH',
-        ClientId: 'your-cognito-client-id',
-        AuthParameters: { USERNAME: email, PASSWORD: password },
+      ClientId: '3046tcigs53nhra0cckta9h7ot',
+      Username: username,
+      ConfirmationCode: code,
     };
-    return await cognito.initiateAuth(params).promise();
-};
-
-exports.verifyUser = async (username, code) => {
-    const params = {
-        ClientId: '3046tcigs53nhra0cckta9h7ot',
-        Username: username,
-        ConfirmationCode: code,
-    };
-    const data = await cognito.confirmSignUp(params).promise();
-
-    // Fetch subId from Cognito
+    const confirmCommand = new ConfirmSignUpCommand(params);
+    await cognitoClient.send(confirmCommand);
+  
     const getUserParams = {
-        UserPoolId: 'YOUR_USER_POOL_ID',
-        Username: username,
+      UserPoolId: 'eu-north-1_MAMG3ECOK',
+      Username: username,
     };
-    const userData = await cognito.adminGetUser(getUserParams).promise();
-    const subId = userData.UserAttributes.find(attr => attr.Name === 'sub').Value;
-
-    // Save user in microservice
-    const saveResponse = await axios.post('http://localhost:8080/api/user/save', { username, subId });
+    const userCommand = new AdminGetUserCommand(getUserParams);
+    const userData = await cognitoClient.send(userCommand);
+    const subId = userData.UserAttributes.find((attr) => attr.Name === 'sub').Value;
+  console.log(subId);
+    const saveResponse = await axios.post('http://localhost:8080/api/v1/user/save', { username, subId });
     return saveResponse;
-};
+  };
+
+// services/userService.js
+
+exports.logoutUser = async (accessToken) => {
+    const params = { AccessToken: accessToken };
+    const logoutCommand = new GlobalSignOutCommand(params);
+  
+    try {
+      await cognitoClient.send(logoutCommand);
+      return { message: 'User logged out successfully' };
+    } catch (err) {
+      throw new Error('Failed to logout: ' + err.message);
+    }
+  };
+  
+
