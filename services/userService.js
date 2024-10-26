@@ -10,10 +10,8 @@ const {
 
 require('dotenv').config();
 
-const jwtSecretKey = process.env.JWT_SECRET_KEY;
 const CLIENT_ID = process.env.CLIENT_ID;
-const userPoolId = process.env.USER_POOL_ID;
-
+const USER_POOL_ID = process.env.USER_POOL_ID;
 
 
 const USER_MICROSERVICE_BASE_URL = 'http://localhost:8080/api/v1/users';
@@ -52,7 +50,7 @@ exports.signInUser = async (req) => {
         
         const params = {
             AuthFlow: 'USER_PASSWORD_AUTH',
-            ClientId: '3046tcigs53nhra0cckta9h7ot', // replace with your actual ClientId
+            ClientId: CLIENT_ID, // replace with your actual ClientId
             AuthParameters: {
                 USERNAME: username,
                 PASSWORD: password
@@ -83,7 +81,7 @@ exports.signInUser = async (req) => {
   exports.verifyUser = async (req) => {
     const {username, code} = req.body;
     const params = {
-      ClientId: '3046tcigs53nhra0cckta9h7ot',
+      ClientId: CLIENT_ID,
       Username: username,
       ConfirmationCode: code,
     };
@@ -91,7 +89,7 @@ exports.signInUser = async (req) => {
     await cognitoClient.send(confirmCommand);
   
     const getUserParams = {
-      UserPoolId: 'eu-north-1_MAMG3ECOK',
+      UserPoolId: USER_POOL_ID,
       Username: username,
     };
     const userCommand = new AdminGetUserCommand(getUserParams);
