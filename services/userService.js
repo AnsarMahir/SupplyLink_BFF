@@ -34,16 +34,55 @@ exports.getUserProfile = async (token) => {
     });
 };
 
-exports.signUpUser = async (username, email, password) => {
+exports.signUpUser = async (username, email, password,Role) => {
     const params = {
       ClientId: CLIENT_ID,
       Username: username,
       Password: password,
-      UserAttributes: [{ Name: 'email', Value: email }],
+      UserAttributes: [{ Name: 'email', Value: email }, {
+        Name: "custom:Role", // Ensure the custom attribute is prefixed with `custom:`
+        Value: Role,
+    }],
     };
     const command = new SignUpCommand(params);
     return await cognitoClient.send(command);
   };
+
+ 
+
+  // exports.signUpUser = async (username, email, password) => {
+  //   try {
+  //     // Cognito signup process
+  //     const params = {
+  //       ClientId: CLIENT_ID,
+  //       Username: username,
+  //       Password: password,
+  //       UserAttributes: [{ Name: 'email', Value: email }],
+  //     };
+  //     const command = new SignUpCommand(params);
+  //     const cognotoResponse = await cognitoClient.send(command);
+  
+  //     // Extract subId from Cognito response (typically the sub attribute)
+  //     const subId = cognotoResponse.UserSub;
+  
+  //     // Prepare user object to send to user microservice
+  //     const userPayload = {
+  //       subId: subId,
+  //       userConfirmed: false, // Initially set to false
+  //       refreshToken: null // You might want to handle refresh token separately
+  //     };
+  
+     
+  //     const userServiceResponse = await axios.post('http://localhost:8083/api/v1/users', userPayload);
+  
+  //     console.log(userServiceResponse);
+  //     return  cognotoResponse;
+     
+  //   } catch (error) {
+  //     console.error('Signup process failed', error);
+  //     throw error;
+  //   }
+  // };
   
 exports.signInUser = async (req) => {
         const { username, password } = req.body;
@@ -79,25 +118,26 @@ exports.signInUser = async (req) => {
 
 
   exports.verifyUser = async (req) => {
-    const {username, code} = req.body;
+    let {username, otp} = req.body;
+    username = username.toLowerCase();
     const params = {
       ClientId: CLIENT_ID,
       Username: username,
-      ConfirmationCode: code,
+      ConfirmationCode: otp,
     };
     const confirmCommand = new ConfirmSignUpCommand(params);
     await cognitoClient.send(confirmCommand);
   
-    const getUserParams = {
-      UserPoolId: USER_POOL_ID,
-      Username: username,
-    };
-    const userCommand = new AdminGetUserCommand(getUserParams);
-    const userData = await cognitoClient.send(userCommand);
-    const subId = userData.UserAttributes.find((attr) => attr.Name === 'sub').Value;
-  console.log(subId);
-    const saveResponse = await axios.post('http://localhost:8080/api/v1/user/save', { username, subId });
-    return saveResponse;
+  //   const getUserParams = {
+  //     UserPoolId: USER_POOL_ID,
+  //     Username: username,
+  //   };
+  //   const userCommand = new AdminGetUserCommand(getUserParams);
+  //   const userData = await cognitoClient.send(userCommand);
+  //   const subId = userData.UserAttributes.find((attr) => attr.Name === 'sub').Value;
+  // console.log(subId);
+  //   const saveResponse = await axios.post('http://localhost:8080/api/v1/user/save', { username, subId });
+  //   return saveResponse;
   };
 
 // services/userService.js

@@ -11,7 +11,7 @@ const productRoutes = require('./routes/productRoutes');
 const userRoutes = require('./routes/userRoutes');
 
 // Use routes
-app.use('/api/products', productRoutes);
+app.use('/api', productRoutes);
 app.use('/api/users', userRoutes);
 
 const PORT = process.env.PORT || 3000;

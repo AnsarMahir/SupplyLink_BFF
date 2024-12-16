@@ -48,12 +48,16 @@ exports.getUserProfile = async (req, res) => {
 exports.signUpUser = async (req, res) => {
     try {
         const { username, email, password } = req.body;
-        const data = await userService.signUpUser(username, email, password);
+        const Role = "User";
+        const data = await userService.signUpUser(username, email, password,Role);
+        console.log(data);
         res.status(200).json({ message: 'User signed up successfully', data });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 };
+
+
 
 exports.signInUser = async (req, res) => {
     try {
